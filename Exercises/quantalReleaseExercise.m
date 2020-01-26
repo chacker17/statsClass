@@ -3,6 +3,8 @@
 
 % Link to exercise page: https://canvas.upenn.edu/courses/1358934/discussion_topics/5002068
 
+% Josh's solution: https://github.com/PennNGG/Statistics/blob/master/Binomial%20Distribution/BinomialDistributionAnswers.m
+
 % Written 1.24.20 by CMH
 
 %% Exercise 1
@@ -165,7 +167,107 @@ end
 
 
 %% Exercise 4
+% Rewritten entirely after looking at Josh's code to not use loops and more
+% efficiently pinpoint pHat
+data = [0 0 3 10 19 26 16 16 5 5 0 0 0 0 0];
+n = 14;
+k = 0:n;
+releaseProbs = (0:0.01:1)';
 
+probs = binopdf(repmat(k, length(releaseProbs), 1), n, repmat(releaseProbs, 1, length(k)));
+
+countsMat = repmat(data, length(releaseProbs), 1);
+
+likelihood = prod(probs .^ countsMat, 2); % Not sure I understand 181/185/190
+pHat_likelihood = releaseProbs(likelihood == max(likelihood));
+fprintf('pHat based on likelihoods is %.2f\n', pHat_likelihood);
+
+logLikelihood = sum(log(probs).*countsMat, 2);
+pHat_logLikelihood = releaseProbs(logLikelihood == max(logLikelihood));
+fprintf('pHat based on log likelihoods is %.2f\n', pHat_logLikelihood);
+
+% Fitting procedure
+pHat_fit = binofit(sum(data.*k), sum(data)*n);
+fprintf('pHat based on fiting procedure is %.2f\n', pHat_fit);
 
 %% Exercise 5
+p = 0.3;
+n = 14;
+numReleased = 7;
 
+pHat = binofit(numReleased, n);
+fprintf('Probability of this is %.2f\n', pHat);
+
+pKnown = 0.3;
+prob = binofit(numReleased, n, pKnown);
+fprintf('Probability that release stats have shifted is %.2f\n', prob);
+
+%% Bonus
+data = [615, 206, 33, 2, 0, 0; ...
+    604, 339, 94, 11, 2, 0; ...
+    332, 126, 21, 1, 0, 0; ...
+    573, 443, 154, 28, 2, 0; ...
+    172, 176, 89, 12, 1, 0; ...
+    80, 224, 200, 32, 4, 0];
+
+numTemps = size(data, 1);
+
+% Loop through each temperature experiment and see if data fits binomial
+% distribution
+for a = 1:numTemps
+    currCounts = data(a, :); % Grab one temp's data
+    numPts = length(currCounts) - 1;
+    pts = 0:5;
+    
+    N = sum(currCounts); % Total number of trials
+    
+    m = sum(currCounts(2:end).*pts(2:end))/N; % Compute p and n
+    variance = sum((pts-m).^2.*currCounts)/N;
+%     variance = var(currCounts);
+    
+    p = 1 - (variance/m);
+    n = m/p;
+    
+    % Compute putative binomial distribution vals given calculated p, m
+    % P. 762 in paper
+    theoretical_binom = zeros(1, length(currCounts));
+    theoretical_binom(1) = N.*(1-p).^n;
+    for b = 2:length(currCounts)
+        x = b - 1;
+        theoretical_binom(b) = theoretical_binom(b-1).*(m-p.*(x-1))/(x.*(1-p));
+    end
+    
+    theoretical_binom = round(theoretical_binom);
+    
+    % Plot putative binomial distribution and actual data (pdf)
+    subplot(1, 6, a);
+    hold on
+    bar(0:numPts, currCounts./N)
+    plot(0:numPts, theoretical_binom./sum(theoretical_binom), 'ro-', 'LineWidth', 2, 'MarkerSize', 10); % Putative
+    
+    xlabel('Num of events');
+    ylabel('Probability');
+    
+    % Poisson (added from Josh's code)
+    pps = poisspdf(pts, m);
+    plot(pts+0.5, pps, 'bo-', 'MarkerFaceColor', 'b', 'LineWidth', 2);
+    
+    hold off
+    
+    % Chi-square goodness of fit test (added from Josh's code -- not working here or in Josh's code)
+    
+    % If you want to compute Chi-2 goodness-of-fit,  k-1 degrees of freedom
+	% A little bit of a cheat -- assume all bins contribute even when
+    % binomialCounts=0 (because nx is always zero then, too)
+    pb = 1-chi2cdf(nansum((pts-theoretical_binom).^2./theoretical_binom), length(theoretical_binom)-1);
+    fprintf('Chi-square for binomial distribution fit: %.4f\n', pb);
+    
+    
+	% If you want to compute Chi-2 goodness-of-fit, k-1 degrees of freedom
+    poissonCounts = round(pps.*N);
+    pp = 1-chi2cdf(nansum((nx-poissonCounts).^2./poissonCounts), length(poissonCounts)-1);
+    fprintf('Chi-square for poisson distribution fit: %.4f\n', pp);
+    
+    
+    
+end
