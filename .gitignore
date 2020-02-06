@@ -1,5 +1,5 @@
 .DS_Store
 .DS_Store?
 Icon
-Tutorials/ipynb_checkpoints
-Tutorials/vscode
+Tutorials/.ipynb_checkpoints
+Tutorials/.vscode
