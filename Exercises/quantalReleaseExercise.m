@@ -77,7 +77,7 @@ releaseProbs = 0:0.05:1;
 cnt = 1;
 for a = releaseProbs
     tempProb = binopdf(0:n, n, a);
-    totLik = prob8 + tempProb(6);
+    totLik = prob8 * tempProb(6);
     totLiks(cnt) = totLik;
     logLik = log(prob8) + log(tempProb(6));
     logLiks(cnt) = logLik;
@@ -265,7 +265,7 @@ for a = 1:numTemps
     
 	% If you want to compute Chi-2 goodness-of-fit, k-1 degrees of freedom
     poissonCounts = round(pps.*N);
-    pp = 1-chi2cdf(nansum((nx-poissonCounts).^2./poissonCounts), length(poissonCounts)-1);
+    pp = 1-chi2cdf(nansum((n-poissonCounts).^2./poissonCounts), length(poissonCounts)-1);
     fprintf('Chi-square for poisson distribution fit: %.4f\n', pp);
     
     
