@@ -3,7 +3,7 @@
 
 % Link: https://canvas.upenn.edu/courses/1358934/discussion_topics/5600885
 
-% Josh's solution: 
+% Josh's solution: https://github.com/PennNGG/Statistics/tree/master/Parametric%20Correlation
 
 % Written 2.16.2020 by CMH
 
