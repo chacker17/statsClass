@@ -90,6 +90,7 @@ set(gca, 'FontSize', 18, 'LineWidth', 2);
 
 hold off
 
+
 %% Plot timcourse for low, medium and high memorability images
 % Sort into high, medium and low memorability and plot timecourse 
 clear le; clear ue
@@ -151,3 +152,22 @@ legend({'low: 0.44', 'med: 0.67', 'high: 0.84'}, 'FontSize', 18);
 
 hold off
     
+%% Plot individual trials (every third trial)
+[numImages, ~] = size(overallTimecourse);
+timecourse_sorted = overallTimecourse(sortIdx, :);
+alpha = linspace(0, 0.8, length(1:3:numImages));
+
+figure(3)
+
+hold on
+colorcnt = 1;
+for a = 1:3:numImages
+    plot(t, timecourse_sorted(a, :), 'LineWidth', 1, 'color', [0 0 0] + alpha(colorcnt));
+    colorcnt = colorcnt + 1;
+end
+
+xlabel('Time (ms)');
+ylabel('Firing rate (spks/s)');
+set(gca, 'FontSize', 18, 'LineWidth', 2);
+
+hold off
