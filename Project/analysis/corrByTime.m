@@ -1,4 +1,4 @@
-function [timePts, corrOverTime] = corrByTime(window_width, step_size, total_time)
+function [timePts, corrOverTime, errorOverTime] = corrByTime(window_width, step_size, total_time)
 % Purpose: Computes the correlation between response magnitude and image
 % memorability over time using a sliding window analysis.
 
@@ -17,6 +17,7 @@ function [timePts, corrOverTime] = corrByTime(window_width, step_size, total_tim
         % window centered with the times given in timePts
 
 % Written 4.13.2020 by CMH
+% Updated 4.16.2020 to add error bars by CMH
 
 %% Load data, set variables, etc.
 if nargin ~= 3
@@ -71,6 +72,7 @@ for a = 1:numPoints % Slide the window across all points
     
     currCorr = corrcoef(mems, RMperIm);
     corrOverTime(a) = currCorr(1, 2); % Correlation
+    errorOverTime(a) = sqrt((1-corrOverTime(a)^2)/(images-2)); % SEM of the correlation
     
     window = window + step_size;
     

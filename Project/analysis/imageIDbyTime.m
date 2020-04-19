@@ -1,4 +1,4 @@
-function [timePts, idAccByTime] = imageIDbyTime(window_width, step_size, total_time)
+function [timePts, idAccByTime, errorByTime] = imageIDbyTime(window_width, step_size, total_time)
 
 % Purpose: Plots the accuracy of a 107-way classifier using a sliding
 % window analysis.
@@ -20,7 +20,7 @@ function [timePts, idAccByTime] = imageIDbyTime(window_width, step_size, total_t
 % Written 4.13.2020 by CMH
 
 %% Load data, set variables, etc.
-if nargin == 3
+if nargin ~= 3
     total_time = [-100 400] .* 10^3;
     window_width = 50 * 10^3;
     step_size = 5 * 10^3;
@@ -42,6 +42,7 @@ numPoints = length(timePts);
 
 %% Classifier performance over time
 for a = 1:numPoints % Slide window over time
+    a
     
     curr_window = window;
     
@@ -61,10 +62,11 @@ for a = 1:numPoints % Slide window over time
         end
     end
     
-    perf1 = classifierPerformance(SC.N, SC.F); % Train fam, test nov
-    perf2 = classifierPerformance(SC.F, SC.N); % Train nov, test fam
+    [perf1, error1] = classifierPerformance(SC.N, SC.F); % Train fam, test nov
+    [perf2, error2] = classifierPerformance(SC.F, SC.N); % Train nov, test fam
     
     idAccByTime(a) = (perf1 + perf2) / 2; % Average training with fam or nov
+    errorByTime(a) = (error1 + error2) / 2;
     
     window = window + step_size;
     
@@ -75,10 +77,11 @@ timePts = timePts * 10^-3; % Put into ms for output
 end
 
 %% Helper functions
-function perf = classifierPerformance(spikes_train, spikes_test)
+function [perf, err] = classifierPerformance(spikes_train, spikes_test)
 
 [units, images] = size(spikes_train);
 angleDist = nan(images, images);
+numReplicates = 30;
 
 for a = 1:images % Training set
     
@@ -87,19 +90,33 @@ for a = 1:images % Training set
         trainVec = spikes_train(:, a);
         testVec = spikes_test(:, b);
         
-        angleDist(a, b) = abs(corr(trainVec(:), testVec(:), 'Type', 'Pearson'));
+        angleDist(a, b, 1) = abs(corr(trainVec(:), testVec(:), 'Type', 'Pearson'));
+        SEM = sqrt((1-angleDist(a, b)^2)/(images-2)); % Get standard error of the correlation
+        
+        for c = 2:numReplicates % Randomly choose a correlation from the distribution and save 100 times (to be used to generate error terms
+            
+            angleDist(a, b, c) = normrnd(angleDist(a, b, 1), SEM);
+            
+        end
         
     end
     
 end
 
-max_dist = max(angleDist, [], 2);
-testMax = angleDist == max_dist;
-actMax = eye(images, images);
+perf_temp = [];
+for d = 1:numReplicates
 
-correct_ind = testMax .* actMax;
-numCorrect = sum(correct_ind, 2);
+    max_dist = max(angleDist(:, :, d), [], 2);
+    testMax = angleDist(:, :, d) == max_dist;
+    actMax = eye(images, images);
 
-perf = sum(numCorrect) / length(numCorrect);
+    correct_ind = testMax .* actMax;
+    numCorrect = sum(correct_ind, 2);
+
+    perf_temp(d) = sum(numCorrect) / length(numCorrect); % Actual performance
+end
+
+perf = mean(perf_temp);
+err = std(perf_temp) / sqrt(numReplicates);
 
 end
